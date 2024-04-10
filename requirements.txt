@@ -6,3 +6,4 @@ torch
 torchvision
 matplotlib
 pyqt5
+librosa
