@@ -4,6 +4,7 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import torch
+from sklearn.preprocessing import MinMaxScaler
 import utils
 
 # global variables
@@ -44,6 +45,7 @@ def save_spectrogram(title, y, sr, hop_length, y_axis='linear', save=False, show
         plt.savefig('graphs/stfts/' + title[:title.find(' ')] + '.png', bbox_inches='tight')
     elif show:
         plt.show()
+    plt.close()
     return colors
 
 def extract_and_plot(audio_data, frameSize, hopSize, title):
@@ -67,6 +69,9 @@ def extract_and_plot(audio_data, frameSize, hopSize, title):
     y_audio = np.abs(stft_audio) ** 2
     y_log_audio = librosa.power_to_db(y_audio)
     colors = save_spectrogram(title + ' log and y_axis log', y_log_audio, sample_rate, hopSize, y_axis='log')
+    colors = colors[:, :, :3]
+    scaler = MinMaxScaler()
+    y_log_audio = scaler.fit_transform(y_log_audio)
     return y_log_audio, colors
 
 def extract_and_save_colormap(basepath, fullpath):
