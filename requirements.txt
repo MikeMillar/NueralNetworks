@@ -4,6 +4,7 @@ pyarrow
 scipy
 torch
 torchvision
+torchaudio
 matplotlib
 pyqt5
 librosa
