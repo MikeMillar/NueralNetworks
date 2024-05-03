@@ -1,4 +1,8 @@
 import os
+import torch
+import torch.nn as nn
+import torch.optim as optim
+from torch.utils.data import DataLoader
 
 def get_audio_filenames(dir):
     """
@@ -30,3 +34,19 @@ def get_audio_filenames(dir):
             filenames.append(filepath)
     # Return filenames
     return filenames
+
+def clean_model_dir(dir):
+    model_files = os.listdir(dir)
+    worst_acc = float('inf')
+    worst_file = None
+    while (len(model_files) > 5):
+        for file in model_files:
+            checkpoint = torch.load(file)
+            checkpoint_acc = checkpoint['val_accuracy']
+            if checkpoint_acc < worst_acc:
+                worst_acc = checkpoint_acc
+                worst_file = file
+        os.remove(worst_file)
+        worst_acc = float('inf')
+        worst_file = None
+        model_files = os.listdir(dir)
