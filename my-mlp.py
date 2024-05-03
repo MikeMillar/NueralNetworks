@@ -5,6 +5,8 @@ from torch import nn
 from torch.utils.data import DataLoader, Dataset
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.model_selection import train_test_split
+import time
+from datetime import datetime
 import utils
 
 # CSV files
@@ -35,13 +37,26 @@ class MLP(nn.Module):
         self.cost = cost
         self.dropout = nn.Dropout(dropout_rate)
         self.layers = nn.ModuleList()
+        # layers = []
         for i in range(len(layer_sizes)-1):
             layer = nn.Linear(layer_sizes[i], layer_sizes[i+1])
             self.layers.append(layer)
+            # layers.append(layer)
             # if i < len(layer_sizes) - 2:
             #     layers.append(self.activation)
             #     layers.append(self.dropout)
+            # else:
+            #     layers.append(nn.Softmax())
         # self.linear_relu_stack = nn.Sequential(*layers)
+        self.linear_relu_stack = nn.Sequential(
+            nn.Linear(layer_sizes[0], layer_sizes[1]),
+            nn.ReLU(),
+            nn.Dropout(dropout_rate),
+            nn.Linear(layer_sizes[1], layer_sizes[1]),
+            nn.ReLU(),
+            nn.Dropout(dropout_rate),
+            nn.Linear(layer_sizes[1], layer_sizes[2])
+        )
         self.set_optimizer(optimizer)
 
     def forward(self, x):
@@ -59,6 +74,8 @@ class MLP(nn.Module):
         # TODO: Add more optimizer options
         if optimizer == 'SGD':
             self.optimizer = torch.optim.SGD(self.parameters(), lr=self.learning_rate)
+        elif optimizer == 'Adam':
+            self.optimizer = torch.optim.Adam(self.parameters(), lr=self.learning_rate)
         
 
 def load_data(file):
@@ -67,6 +84,7 @@ def load_data(file):
 def split_data(X):
     Y, classes = pd.factorize(X['label'])
     mapping = dict(zip(range(len(classes)), classes))
+    print(f'classes={classes}, mapping={mapping}')
     X.drop('label', axis=1, inplace=True)
     X_train, X_test, Y_train, Y_test = train_test_split(X, Y, test_size=0.2, stratify=Y)
     return X_train, X_test, Y_train, Y_test, mapping
@@ -109,7 +127,7 @@ def train(dataloader, model):
         model.optimizer.zero_grad()
 
         loss, current = loss.item(), (batch+1) * len(X)
-        print(f'loss: {loss:>7f}   [{current:>5d}/{size:>5d}]')
+        # print(f'loss: {loss:>7f}   [{current:>5d}/{size:>5d}]')
 
 def test(dataloader, model):
     size = len(dataloader.dataset)
@@ -125,6 +143,7 @@ def test(dataloader, model):
     test_loss /= num_batches
     correct /= size
     print(f'Test Error: \n Accuracy: {(100*correct):>0.1f}%, Avg loss: {test_loss:>8f} \n')
+    return correct, test_loss
 
 if __name__ == "__main__":
     # Load the data
@@ -144,19 +163,37 @@ if __name__ == "__main__":
     # Define layer sizes
     # 1st element is input, last element is output
     # Each row contains 20 elements, output is 10 classes
-    layer_sizes = [20, 15, 12, 10]
+    layer_sizes = [20, 1028, 10]
 
     # Define activation, cost functions
     activation = nn.ReLU()
     cost = nn.CrossEntropyLoss()
 
     # Create model
-    model = MLP(layer_sizes, activation=activation, cost=cost, optimizer='SGD').to(device)
+    model = MLP(layer_sizes, activation=activation, cost=cost, optimizer='Adam', learning_rate=0.001).to(device)
     print(model)
 
     # Define number of training epochs
-    epochs = 100
-    for t in range(epochs):
+    max_epochs = 500
+    loss = float('inf')
+    acc = 0.0
+    for t in range(max_epochs):
         print(f'Epoch {t+1}\n------------------------')
         train(train_loader, model)
-        test(test_loader, model)
+        nAcc, nLoss = test(test_loader, model)
+        if nAcc > 0.4 and nAcc > acc:
+            acc = nAcc
+            now = datetime.now()
+            dt_string = now.strftime("%m-%d-%Y_%H-%M-%s")
+            torch.save({
+                'epoch': t+1,
+                'model_state_dict': model.state_dict(),
+                'optimizer_state_dict': model.optimizer.state_dict(),
+                'val_accuracy': acc,
+            }, 'models/mlp/best_mlp_' + dt_string + '.pth')
+        if abs(loss - nLoss) < 1e-6:
+            print(f'Early termination')
+            break
+        loss = nLoss
+
+    utils.clean_model_dir('models/mlp/')
