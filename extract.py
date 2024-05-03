@@ -10,7 +10,7 @@ import utils
 # global variables
 training_dir = 'data/train/'                    # training data directory
 testing_dir = 'data/test/'                      # testing data directory
-train = True                                    # True if we are extracting from training data
+train = False                                    # True if we are extracting from training data
 frameSize = 2048                                # ??
 hopSize = 512                                   # ??
 
