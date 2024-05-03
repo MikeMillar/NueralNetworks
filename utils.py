@@ -3,6 +3,9 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import DataLoader
+import math
+from skimage.util.shape import view_as_windows
+import numpy as np
 
 def get_audio_filenames(dir):
     """
@@ -50,3 +53,14 @@ def clean_model_dir(dir):
         worst_acc = float('inf')
         worst_file = None
         model_files = os.listdir(dir)
+
+def create_image_window(image):
+    image = np.transpose(np.array(image), (1, 0, 2))
+    print(image.shape)
+    # Each image is a pytorch Tensor, need to create 224x224x3 image sections
+    windows = view_as_windows(image, (224,224,3), 224)
+    adjusted_windows = []
+    for i in range(windows.shape[0]):
+        for j in range(windows.shape[1]):
+            adjusted_windows.append(torch.tensor(np.transpose(windows[i,j,0], (2, 1, 0))))
+    return adjusted_windows
