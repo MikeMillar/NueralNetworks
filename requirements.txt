@@ -2,6 +2,7 @@ pandas
 numpy
 pyarrow
 scipy
+scikit-image
 torch
 torchvision
 torchaudio
