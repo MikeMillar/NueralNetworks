@@ -6,6 +6,7 @@ scikit-image
 torch
 torchvision
 torchaudio
+torchmetrics
 matplotlib
 pyqt5
 librosa

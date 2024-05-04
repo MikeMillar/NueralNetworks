@@ -56,7 +56,6 @@ def clean_model_dir(dir):
 
 def create_image_window(image):
     image = np.transpose(np.array(image), (1, 0, 2))
-    print(image.shape)
     # Each image is a pytorch Tensor, need to create 224x224x3 image sections
     windows = view_as_windows(image, (224,224,3), 224)
     adjusted_windows = []
@@ -64,3 +63,9 @@ def create_image_window(image):
         for j in range(windows.shape[1]):
             adjusted_windows.append(torch.tensor(np.transpose(windows[i,j,0], (2, 1, 0))))
     return adjusted_windows
+
+def map_labels(labels):
+    unique_labels = list(set(labels))
+    str_to_int = {string: i for i, string in enumerate(unique_labels)}
+    int_to_str = {v: k for k, v in str_to_int.items()}
+    return [str_to_int[string] for string in labels], str_to_int, int_to_str
