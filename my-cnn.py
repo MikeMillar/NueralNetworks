@@ -117,7 +117,8 @@ def test(dataloader, model, criterion):
                 targets = torch.tensor(np.array([y[i]] * len(data))).to(device=device)
                 pred = model(X)
                 test_loss += criterion(pred, targets).item()
-                correct += (pred.argmax(1) == y).type(torch.float).sum().item()
+                # correct += (pred.argmax(1) == y).type(torch.float).sum().item()
+                correct += (pred.argmax(1) == y).sum().item()
     test_loss /= num_batches
     correct /= size
     print(f'Test Error: \n Accuracy: {(100*correct):>0.1f}%, Avg loss: {test_loss:>8f} \n')
