@@ -116,7 +116,7 @@ def test(dataloader, model, criterion):
                 data = torch.tensor(np.array(windows)).float().to(device=device)
                 targets = torch.tensor(np.array([y[i]] * len(data))).to(device=device)
                 pred = model(X)
-                test_loss += criterion(pred, y).item()
+                test_loss += criterion(pred, targets).item()
                 correct += (pred.argmax(1) == y).type(torch.float).sum().item()
     test_loss /= num_batches
     correct /= size
@@ -145,3 +145,4 @@ epochs = 5
 for t in range(1, epochs+1):
     print(f'Epoch [{t}]\n-------------------------')
     train(train_loader, model, criterion, optimizer)
+    test(test_loader, model, criterion)
