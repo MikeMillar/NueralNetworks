@@ -16,10 +16,9 @@ testing_file = 'data/test/test_20_mfcc.csv'
 batch_size = 60
 
 class CustomDataset(Dataset):
-    def __init__(self, data, labels, batch_size: int | None = 1):
+    def __init__(self, data, labels):
         self.data = data
         self.labels = labels
-        self.batch_size = batch_size
 
     def __getitem__(self, index):
         row = self.data[index]

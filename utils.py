@@ -69,3 +69,8 @@ def map_labels(labels):
     str_to_int = {string: i for i, string in enumerate(unique_labels)}
     int_to_str = {v: k for k, v in str_to_int.items()}
     return [str_to_int[string] for string in labels], str_to_int, int_to_str
+
+def calculate_convolution_size(input_size, kernal_size, padding, stride):
+    out_rows = math.floor(((input_size[0] + (2 * padding) - kernal_size[0]) / stride) + 1)
+    out_cols = math.floor(((input_size[1] + (2 * padding) - kernal_size[1]) / stride) + 1)
+    return (out_rows, out_cols)
