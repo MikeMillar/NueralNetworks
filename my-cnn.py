@@ -55,30 +55,7 @@ class GenreClassifier(nn.Module):
         )
 
     def forward(self, x):
-        return self.network(x)
-    
-    def train_step(self, batch, criterion):
-        images, labels = batch
-        predictions = self(images)
-        loss = criterion(predictions, labels)
-        return loss
-    
-    def validation_step(self, batch, criterion, accuracy):
-        images, labels = batch
-        predictions = self(images)
-        loss = criterion(predictions, labels)
-        acc = accuracy(predictions, labels)
-
-    def validation_epoch_end(self, outputs):
-        batch_losses = [x['val_loss'] for x in outputs]
-        epoch_loss = torch.stack(batch_losses).mean()
-        batch_accs = [x['val_acc'] for x in outputs]
-        epoch_acc = torch.stack(batch_accs).mean()
-        return {'val_loss' : epoch_loss.item(), 'val_acc' : epoch_acc.item()}
-    
-    def epoch_end(self, epoch, result):
-        print(f'Epoch [{epoch}], train_loss: {result['train_loss']:0.2f}, val_loss: {result['val_loss']:0.2f}')
-        
+        return self.network(x)        
     
 def load_data(dir):
     files = os.listdir(dir)
