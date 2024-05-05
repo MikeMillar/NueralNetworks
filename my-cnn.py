@@ -32,50 +32,17 @@ class SpectrogramDataset(Dataset):
 class GenreClassifier(nn.Module):
     def __init__(self):
         super(GenreClassifier, self).__init__()
-        # self.network = nn.Sequential(
-        #     nn.Conv2d(3, 32, kernel_size=(3,3), stride=(1,1), padding=(1,1)),
-        #     nn.ReLU(),
-        #     nn.Conv2d(32, 64, kernel_size=(3, 3), stride=(1,1), padding=(1,1)),
-        #     nn.ReLU(),
-        #     nn.MaxPool2d(2, 2), # Output size 64 x 112 x 112
-
-        #     nn.Conv2d(64, 128, kernel_size=(3,3), stride=(1,1), padding=(1,1)),
-        #     nn.ReLU(),
-        #     nn.Conv2d(128, 128, kernel_size=(3,3), stride=(1,1), padding=(1,1)),
-        #     nn.ReLU(),
-        #     nn.MaxPool2d(2,2), # output size 128 x 56 x 56
-
-        #     nn.Conv2d(128, 256, kernel_size=(3,3), stride=(1,1), padding=(1,1)),
-        #     nn.ReLU(),
-        #     nn.Conv2d(256, 256, kernel_size=(3,3), stride=(3,3), padding=(3,3)),
-        #     nn.ReLU(),
-        #     nn.MaxPool2d(2,2), # output size 256 x 28 x 28
-
-        #     nn.Flatten(),
-        #     nn.Linear(25600, 1024),
-        #     nn.ReLU(),
-        #     nn.Linear(1024, 512),
-        #     nn.ReLU(),
-        #     nn.Linear(512, 10)
-        # )
         self.conv1 = nn.Conv2d(3, 32, kernel_size=3, stride=1, padding=1)
         self.pool = nn.MaxPool2d(2,2)
-        # self.conv2 = nn.Conv2d(32, 64, kernel_size=3, stride=1, padding=1)
-        # self.fc1 = nn.Linear(64*56*56, 512)
         self.fc1 = nn.Linear(32*112*112, 256)
         self.fc2 = nn.Linear(256, 10)
-        # self.fc3 = nn.Linear(128, 10)
 
-    def forward(self, x):
-        # return self.network(x.float())        
+    def forward(self, x):    
         x = x.float()
         x = self.pool(F.relu(self.conv1(x)))
-        # x = self.pool(F.relu(self.conv2(x)))
         x = torch.flatten(x, 1)
         x = F.relu(self.fc1(x))
-        # x = F.relu(self.fc2(x))
         x = self.fc2(x)
-        # x = self.fc3(x)
         return x
     
 def load_data(dir, hasLabels):
@@ -113,7 +80,6 @@ def train(dataloader, model, criterion, optimizer, accuracy):
         batch_loss = 0.0
         for i in range(len(y)):
             windows = utils.create_image_window(X[i])
-            # data = torch.tensor(np.array(windows)).float().to(device=device)
             data = torch.FloatTensor(np.array(windows)).to(device=device)
             targets = torch.tensor(np.array([y[i]] * len(data))).to(device=device)
 
@@ -129,7 +95,7 @@ def train(dataloader, model, criterion, optimizer, accuracy):
             batch_loss += loss.item()
 
         current = (batch+1) * len(X)
-        print(f'loss: {(batch_loss / len(y)):>7f}   [{current:>5d}/{size:>5d}]')
+        # print(f'loss: {(batch_loss / len(y)):>7f}   [{current:>5d}/{size:>5d}]')
 
 def test(dataloader, model, criterion, accuracy):
     size = len(dataloader.dataset)
@@ -145,7 +111,6 @@ def test(dataloader, model, criterion, accuracy):
                 data = torch.FloatTensor(np.array(windows)).to(device=device)
                 targets = torch.tensor(np.array([y[i]] * len(data))).to(device=device)
                 pred = model(data)
-                # print(pred, targets)
                 batch_loss += criterion(pred, targets).item()
                 batch_acc += accuracy(pred, targets).item()
             test_loss += batch_loss / len(y)
@@ -153,7 +118,7 @@ def test(dataloader, model, criterion, accuracy):
             
     test_loss /= num_batches
     test_acc /= num_batches
-    print(f'Test Error: \n Accuracy: {(100*test_acc):>0.1f}%, Avg loss: {test_loss:>8f} \n')
+    print(f'Test Error: Accuracy: {(100*test_acc):>0.1f}%, Avg loss: {test_loss:>8f} \n')
     return test_acc, test_loss
 
 def produce_output(dir, model, reverse_mapping, batch_size):
@@ -195,7 +160,7 @@ optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
 accuracy = MulticlassAccuracy(num_classes=10, average='micro').to(device=device)
 criterion = nn.CrossEntropyLoss()
 
-epochs = 1
+epochs = 50
 for t in range(1, epochs+1):
     print(f'Epoch [{t}]\n-------------------------')
     train(train_loader, model, criterion, optimizer, accuracy)
@@ -203,4 +168,4 @@ for t in range(1, epochs+1):
 
 output = produce_output('data/test/_rgbas/', model, reverse_map, 5)
 out_df = pd.DataFrame(output)
-out_df.to_csv('data/result/test_out.csv', index=False)
+out_df.to_csv('data/result/test_out_sm.csv', index=False)
