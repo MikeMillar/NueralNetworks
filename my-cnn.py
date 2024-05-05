@@ -10,13 +10,47 @@ import pandas as pd
 
 import utils
 
+# Global variables
+training_dir = 'data/train/_rgbas/'
+testing_dir = 'data/train/_rgbas/'
+output_path = 'data/result/test_out.csv'
+
+criterion = nn.CrossEntropyLoss()
+epochs = 50
+test_size = 0.2
+batch_size = 5
+
+
 class SpectrogramDataset(Dataset):
+    """
+    Custom PyTorch dataset to dynamically load the image files.
+    """
     def __init__(self, base_dir, paths, labels):
+        """
+        Initialize the dataset
+
+        Args:
+            base_dir (str): Base directory of the files
+            paths (list(str)): List of filenames
+            labels (list(int)): List of integer mapped labels
+        """
         self.base_dir = base_dir
         self.paths = paths
         self.labels = labels
 
     def __getitem__(self, index):
+        """
+        Internal method used by PyTorch to train and validate the model,
+        as well as produce predictions. Method dynamically loads the image
+        files as needed to reduce memory requirements.
+
+        Args:
+            index (int): Index of data to retrieve
+
+        Returns:
+            image: Loaded image tensor
+            label: Label of the image, if training set.
+        """
         path = self.paths[index]
         image = torch.load(self.base_dir + path)
         # Trim images to ensure they are all the same size
@@ -27,17 +61,35 @@ class SpectrogramDataset(Dataset):
         return image, label
     
     def __len__(self):
+        """
+        Outputs the total size of the dataset
+
+        Returns
+            (int): Size of the dataset
+        """
         return len(self.paths)
     
 class GenreClassifier(nn.Module):
+    """
+    Custom Genre Classification CNN
+    """
     def __init__(self):
+        """
+        Initializes the model
+        """
         super(GenreClassifier, self).__init__()
         self.conv1 = nn.Conv2d(3, 32, kernel_size=3, stride=1, padding=1)
         self.pool = nn.MaxPool2d(2,2)
         self.fc1 = nn.Linear(32*112*112, 256)
         self.fc2 = nn.Linear(256, 10)
 
-    def forward(self, x):    
+    def forward(self, x): 
+        """
+        Internally used method of PyTorch for training, validation, and prediction.
+
+        Args:
+            x (Tensor): Tensor data
+        """   
         x = x.float()
         x = self.pool(F.relu(self.conv1(x)))
         x = torch.flatten(x, 1)
@@ -46,6 +98,17 @@ class GenreClassifier(nn.Module):
         return x
     
 def load_data(dir, hasLabels):
+    """
+    Utility method to load the filenames and labels of the image files
+    
+    Args:
+        dir (str): String path to the data to load
+        hasLabels (bool): Indication of if the data has labels to extract
+
+    Returns:
+        (list(str)): List of filenames
+        (list(str)): List of labels, if applicable
+    """
     files = os.listdir(dir)
     if not hasLabels:
         return files
@@ -55,6 +118,21 @@ def load_data(dir, hasLabels):
     return files, labels
     
 def load_split(dir, test_size, batch_size):
+    """
+    Utility method to load, map labels and split the data. The data is then
+    added into custom PyTorch dataset and data loader objects.
+
+    Args:
+        dir (str): Directory of data to load
+        test_size (float): Float value between 0 and 1 to indicate ratio of testing size.
+        batch_size (int): How many images/labels to use each training cycle
+
+    Returns:
+        (dataloader): Training data loader
+        (dataloader): Validation data loader
+        (dict): Map of str to integer labels
+        (dict): Reverse map    
+    """
     # Load the data from file
     files, labels = load_data(dir, True)
     labels, mapping, reverse_map = utils.map_labels(labels)
@@ -69,11 +147,15 @@ def load_split(dir, test_size, batch_size):
     # Return loaders
     return train_loader, test_loader, mapping, reverse_map
 
-def accuracy(outputs, labels):
-    _, preds = torch.max(outputs, dim=1)
-    return torch.tensor(torch.sum(preds == labels).item() / len(preds))
+def train(dataloader, model, criterion, optimizer):
+    """
+    Method used to train an individual epoch for the MLP model.
 
-def train(dataloader, model, criterion, optimizer, accuracy):
+    Args:
+        dataloader (dataloader): Data loader of the training data
+        model (nn.Module): ML model to train
+        criterion (function): PyTorch cost/loss function
+    """
     size = len(dataloader.dataset)
     model.train()
     for batch, (X, y) in enumerate(dataloader):
@@ -98,6 +180,18 @@ def train(dataloader, model, criterion, optimizer, accuracy):
         # print(f'loss: {(batch_loss / len(y)):>7f}   [{current:>5d}/{size:>5d}]')
 
 def test(dataloader, model, criterion, accuracy):
+    """
+    Method used to validate an individual epoch for the MLP model.
+
+    Args:
+        dataloader (dataloader): Data loader of the validation data
+        model (nn.Module): ML model to train
+        criterion (function): PyTorch cost/loss function
+        accuracy (function): Method to compute accuracy of model
+
+    Returns:
+        (float, float): Epoch accuracy and average loss
+    """
     size = len(dataloader.dataset)
     num_batches = len(dataloader)
     model.eval()
@@ -122,6 +216,19 @@ def test(dataloader, model, criterion, accuracy):
     return test_acc, test_loss
 
 def produce_output(dir, model, reverse_mapping, batch_size):
+    """
+    Method that loads the competition data, produces classification labels
+    for it, and returns the audio file names and their predicted classifications.
+
+    Args:
+        dir (str): Directory path of the competition data
+        model (nn.Module): CNN model
+        reverse_mapping (dict): Dictionary map to map int labels back to strings
+        batch_size (int): How many files to run at one time
+
+    Returns:
+        (dict): Returns dictionary of audio file names and the predicted classifications.
+    """
     # Load the data
     files = load_data(dir, False)
     data = SpectrogramDataset(dir, files, None)
@@ -151,21 +258,18 @@ def produce_output(dir, model, reverse_mapping, batch_size):
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
 
-train_loader, test_loader, mapping, reverse_map = load_split('data/train/_rgbas/', 0.2, 5)
-
+train_loader, test_loader, mapping, reverse_map = load_split(training_dir, test_size, batch_size)
 
 model = GenreClassifier()
 model.to(device=device)
 optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
 accuracy = MulticlassAccuracy(num_classes=10, average='micro').to(device=device)
-criterion = nn.CrossEntropyLoss()
 
-epochs = 50
 for t in range(1, epochs+1):
     print(f'Epoch [{t}]\n-------------------------')
-    train(train_loader, model, criterion, optimizer, accuracy)
+    train(train_loader, model, criterion, optimizer)
     test(test_loader, model, criterion, accuracy)
 
-output = produce_output('data/test/_rgbas/', model, reverse_map, 5)
+output = produce_output(testing_dir, model, reverse_map, batch_size)
 out_df = pd.DataFrame(output)
-out_df.to_csv('data/result/test_out_sm.csv', index=False)
+out_df.to_csv(output_path, index=False)
