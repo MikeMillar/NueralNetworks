@@ -39,6 +39,12 @@ def get_audio_filenames(dir):
     return filenames
 
 def clean_model_dir(dir):
+    """
+    Utility function to clean up old model files that underperform.
+
+    Args:
+        dir (str): Path to the directory to clean up
+    """
     model_files = os.listdir(dir)
     worst_acc = float('inf')
     worst_file = None
@@ -55,6 +61,17 @@ def clean_model_dir(dir):
         model_files = os.listdir(dir)
 
 def create_image_window(image):
+    """
+    Utility function that takes an image file and creates subwindows of that image
+    of size (224, 224). This size chose chosent since that was the size the 
+    transfer learning model was originally trained on.
+
+    Args:
+        image (Tensor): Tensor image file
+
+    Returns:
+        (list): Returns list of tensor windows of the original image
+    """
     image = np.transpose(np.array(image), (1, 0, 2))
     # Each image is a pytorch Tensor, need to create 224x224x3 image sections
     windows = view_as_windows(image, (224,224,3), 224)
@@ -65,12 +82,35 @@ def create_image_window(image):
     return adjusted_windows
 
 def map_labels(labels):
+    """
+    Utility function to map the string labels to integers.
+
+    Args:
+        labels (list): List of labels to map
+
+    Returns:
+        (list): List of mapped labels
+        (dict): Mapping of the labels from strings to ints
+        (dict): Reverse mapping
+    """
     unique_labels = list(set(labels))
     str_to_int = {string: i for i, string in enumerate(unique_labels)}
     int_to_str = {v: k for k, v in str_to_int.items()}
     return [str_to_int[string] for string in labels], str_to_int, int_to_str
 
 def calculate_convolution_size(input_size, kernal_size, padding, stride):
+    """
+    Utility function to calculate the output size of a kernal operation.
+
+    Args:
+        input_size (tuple(int)): Original tensor size
+        kernal_size (tuple(int)): Kernal size
+        padding (int): How much to pad the original tensor
+        stride (int): How much to move the kernal in each iteration
+
+    Returns:
+        (tuple(int)): Returns tuple of the new size
+    """
     out_rows = math.floor(((input_size[0] + (2 * padding) - kernal_size[0]) / stride) + 1)
     out_cols = math.floor(((input_size[1] + (2 * padding) - kernal_size[1]) / stride) + 1)
     return (out_rows, out_cols)
