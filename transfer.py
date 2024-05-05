@@ -130,8 +130,8 @@ class GenreClassifier(nn.Module):
             optimizer.zero_grad()
             for i in range(len(y)):
                 windows = utils.create_image_window(X[i])
-                data = torch.tensor(np.array(windows)).float().to(device="cpu")
-                targets = torch.tensor(np.array([y[i]] * len(data))).to(device="cpu")
+                data = torch.tensor(np.array(windows)).float().to(device=device)
+                targets = torch.tensor(np.array([y[i]] * len(data))).to(device=device)
                 pred = self(data)
                 loss = criterion(pred, targets)
 
@@ -149,8 +149,8 @@ class GenreClassifier(nn.Module):
         for X, y in loader:
             for i in range(len(y)):
                 windows = utils.create_image_window(X[i])
-                data = torch.tensor(np.array(windows)).float().to(device="cpu")
-                targets = torch.tensor(np.array([y[i]] * len(data))).to(device="cpu")
+                data = torch.tensor(np.array(windows)).float().to(device=device)
+                targets = torch.tensor(np.array([y[i]] * len(data))).to(device=device)
                 pred = self(data)
                 loss = criterion(pred, targets)
 
@@ -212,14 +212,16 @@ def load_split(dir, test_size, batch_size):
     # Return loaders
     return train_loader, test_loader, map, reverse_map
 
+device = ("cuda" if torch.cuda.is_available() else "cpu")
+
 train_loader, test_loader, map, reverse_map = load_split('data/train/_rgbas/', 0.2, 1)
 
 model = GenreClassifier('resnet18', True, 0.01)
-model.to(device="cpu")
+model.to(device=device)
 
 optimizer = torch.optim.Adam(model.parameters())
 scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=6, gamma=0.3)
-accuracy = MulticlassAccuracy(num_classes=10, average='micro').to(device="cpu")
+accuracy = MulticlassAccuracy(num_classes=10, average='micro').to(device=device)
 
 print('Initial accuracy of resnet18 with classification layer replaced')
 model.eval()
