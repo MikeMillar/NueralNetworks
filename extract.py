@@ -10,9 +10,9 @@ import utils
 # global variables
 training_dir = 'data/train/'                    # training data directory
 testing_dir = 'data/test/'                      # testing data directory
-train = False                                    # True if we are extracting from training data
-frameSize = 2048                                # ??
-hopSize = 512                                   # ??
+train = False                                   # True if we are extracting from training data
+frameSize = 2048                                # Defines the frame size of the spectrograms
+hopSize = 512                                   # Defines the hop size of the spectrograms
 
 
 def save_spectrogram(title, y, sr, hop_length, y_axis='linear', save=False, show=False):
@@ -103,9 +103,12 @@ def extract_and_save_colormap(basepath, fullpath):
     torch.save(rgba_tensor, rgbpath)
 
 if __name__ == '__main__':
+    # Set the directory
     dir = testing_dir
     if train:
         dir = training_dir
+    # Fetch file paths
     filepaths = utils.get_audio_filenames(dir)
+    # Extract spectrograms and save colormap images
     for file in filepaths:
         extract_and_save_colormap(dir, file)
