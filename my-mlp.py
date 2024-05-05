@@ -16,6 +16,7 @@ testing_file = 'data/test/test_20_mfcc.csv'
 batch_size = 60
 max_epochs = 100
 learning_rate = 0.0001
+epsilon = 1e-6
 
 # Define layer sizes
 # 1st element is input, last element is output
@@ -297,7 +298,7 @@ if __name__ == "__main__":
                 'optimizer_state_dict': model.optimizer.state_dict(),
                 'val_accuracy': acc,
             }, 'models/mlp/best_mlp_' + dt_string + '.pth')
-        if abs(loss - nLoss) < 1e-6:
+        if abs(loss - nLoss) < epsilon:
             print(f'Early termination')
             break
         loss = nLoss
